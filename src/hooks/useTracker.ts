@@ -1,12 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { dateToStr, strToDate, getDaysBetween, CHALLENGE_START, CHALLENGE_END, today as getToday } from '../utils/dates';
-import { db, auth } from '../firebase';
+import { db } from '../firebase';
 import { doc, setDoc, onSnapshot } from 'firebase/firestore';
-import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 
 const STORAGE_KEY = 'alkoholfreez-days';
-const FIRESTORE_COLLECTION = 'trackers';
-const FIRESTORE_DOC = 'jasiek';
 
 export interface TrackerData {
   markedDays: Set<string>;
@@ -79,52 +76,43 @@ function calculateLongestStreak(markedDays: Set<string>): number {
   return longest;
 }
 
-export function useTracker(): TrackerData {
+export function useTracker(uid: string | null): TrackerData {
   const [markedDays, setMarkedDays] = useState<Set<string>>(loadMarkedDays);
-  const [syncStatus, setSyncStatus] = useState<'connecting' | 'synced' | 'offline'>('connecting');
+  const [syncStatus, setSyncStatus] = useState<'connecting' | 'synced' | 'offline'>(
+    uid ? 'connecting' : 'offline'
+  );
   const isRemoteUpdate = useRef(false);
-  const authReady = useRef(false);
 
-  // Sign in anonymously and listen to Firestore
   useEffect(() => {
-    let unsubFirestore: (() => void) | null = null;
-
-    const unsubAuth = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        authReady.current = true;
-        const docRef = doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOC);
-
-        unsubFirestore = onSnapshot(
-          docRef,
-          (snapshot) => {
-            if (snapshot.exists()) {
-              const data = snapshot.data();
-              const remoteDays: string[] = data.markedDays || [];
-              isRemoteUpdate.current = true;
-              const newSet = new Set(remoteDays);
-              setMarkedDays(newSet);
-              saveMarkedDays(newSet);
-            }
-            setSyncStatus('synced');
-          },
-          () => {
-            setSyncStatus('offline');
-          }
-        );
-      }
-    });
-
-    signInAnonymously(auth).catch(() => {
+    if (!uid) {
       setSyncStatus('offline');
-    });
+      return;
+    }
 
-    return () => {
-      unsubAuth();
-      unsubFirestore?.();
-    };
-  }, []);
+    setSyncStatus('connecting');
+    const docRef = doc(db, 'users', uid);
 
-  // Sync local changes to Firestore
+    const unsub = onSnapshot(
+      docRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          const remoteDays: string[] = data.markedDays || [];
+          isRemoteUpdate.current = true;
+          const newSet = new Set(remoteDays);
+          setMarkedDays(newSet);
+          saveMarkedDays(newSet);
+        }
+        setSyncStatus('synced');
+      },
+      () => {
+        setSyncStatus('offline');
+      }
+    );
+
+    return unsub;
+  }, [uid]);
+
   useEffect(() => {
     if (isRemoteUpdate.current) {
       isRemoteUpdate.current = false;
@@ -133,13 +121,13 @@ export function useTracker(): TrackerData {
 
     saveMarkedDays(markedDays);
 
-    if (authReady.current) {
-      const docRef = doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOC);
+    if (uid) {
+      const docRef = doc(db, 'users', uid);
       setDoc(docRef, { markedDays: [...markedDays] }, { merge: true }).catch(() => {
         setSyncStatus('offline');
       });
     }
-  }, [markedDays]);
+  }, [markedDays, uid]);
 
   const toggleDay = useCallback((dateStr: string) => {
     setMarkedDays(prev => {

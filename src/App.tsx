@@ -4,14 +4,32 @@ import { Stats } from './components/Stats';
 import { MotivationalCard } from './components/MotivationalCard';
 import { PreviousChallenge } from './components/PreviousChallenge';
 import { SyncBadge } from './components/SyncBadge';
+import { LoginScreen } from './components/LoginScreen';
 import { useTracker } from './hooks/useTracker';
+import { useAuth } from './hooks/useAuth';
 
 function App() {
-  const tracker = useTracker();
+  const { user, loading, error, signInWithGoogle, logout } = useAuth();
+  const tracker = useTracker(user?.uid ?? null);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-5xl mb-4 animate-pulse">🧊</div>
+          <p className="text-text-secondary text-sm">Ładowanie...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginScreen onSignIn={signInWithGoogle} error={error} loading={loading} />;
+  }
 
   return (
     <div className="min-h-screen px-4 sm:px-6 lg:px-8 pb-12 max-w-[1600px] mx-auto">
-      <SyncBadge status={tracker.syncStatus} />
+      <SyncBadge status={tracker.syncStatus} user={user} onLogout={logout} />
       <Header currentStreak={tracker.currentStreak} />
 
       <Stats
