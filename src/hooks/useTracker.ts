@@ -105,7 +105,8 @@ export function useTracker(uid: string | null): TrackerData {
         }
         setSyncStatus('synced');
       },
-      () => {
+      (err) => {
+        console.error('[Firestore] onSnapshot error:', err);
         setSyncStatus('offline');
       }
     );
@@ -123,7 +124,8 @@ export function useTracker(uid: string | null): TrackerData {
 
     if (uid) {
       const docRef = doc(db, 'users', uid);
-      setDoc(docRef, { markedDays: [...markedDays] }, { merge: true }).catch(() => {
+      setDoc(docRef, { markedDays: [...markedDays] }, { merge: true }).catch((err) => {
+        console.error('[Firestore] setDoc error:', err);
         setSyncStatus('offline');
       });
     }

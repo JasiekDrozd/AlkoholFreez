@@ -25,6 +25,13 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
+  const host = url.hostname;
+
+  if (host.endsWith('firebaseio.com') || host.endsWith('firestore.googleapis.com') ||
+      host.endsWith('identitytoolkit.googleapis.com') || host.endsWith('securetoken.googleapis.com') ||
+      host.endsWith('firebaseinstallations.googleapis.com')) {
+    return;
+  }
 
   if (url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com') {
     event.respondWith(
