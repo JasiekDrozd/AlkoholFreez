@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useCallback } from 'react';
-import { quotes, categoryIcons, categoryLabels, type Quote } from '../data/quotes';
+import { quotes, type Quote } from '../data/quotes';
 
 function shuffleArray<T>(arr: T[]): T[] {
   const shuffled = [...arr];
@@ -34,42 +34,25 @@ export function MotivationalCard() {
   }, [next]);
 
   const variants = {
-    enter: (dir: number) => ({ x: dir > 0 ? 300 : -300, opacity: 0, scale: 0.9 }),
-    center: { x: 0, opacity: 1, scale: 1 },
-    exit: (dir: number) => ({ x: dir > 0 ? -300 : 300, opacity: 0, scale: 0.9 }),
+    enter: (dir: number) => ({ x: dir > 0 ? 200 : -200, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir: number) => ({ x: dir > 0 ? -200 : 200, opacity: 0 }),
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.7 }}
-      className="glass-card p-6 sm:p-8 relative overflow-hidden min-h-[200px] flex flex-col"
+      transition={{ delay: 0.5 }}
+      className="glass-card p-5 sm:p-6 relative overflow-hidden min-h-[180px] flex flex-col"
     >
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-green via-accent-blue to-accent-purple" />
-
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">{categoryIcons[currentQuote.category]}</span>
-          <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-            {categoryLabels[currentQuote.category]}
-          </span>
-        </div>
-        <div className="flex gap-1">
-          {shuffledQuotes.map((_, i) => (
-            <div
-              key={i}
-              className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
-                i === currentIndex % shuffledQuotes.length
-                  ? 'bg-accent-green w-4'
-                  : 'bg-border'
-              }`}
-            />
-          )).slice(0, 8)}
-          {shuffledQuotes.length > 8 && (
-            <span className="text-[10px] text-text-muted ml-1">+{shuffledQuotes.length - 8}</span>
-          )}
-        </div>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[11px] font-medium text-text-muted uppercase tracking-wider">
+          {currentQuote.category}
+        </span>
+        <span className="text-[11px] text-text-muted tabular-nums">
+          {(currentIndex % shuffledQuotes.length) + 1}/{shuffledQuotes.length}
+        </span>
       </div>
 
       <div className="flex-1 flex items-center justify-center relative">
@@ -84,37 +67,33 @@ export function MotivationalCard() {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="text-center"
           >
-            <p className="text-lg sm:text-xl lg:text-2xl font-medium text-text-primary leading-relaxed mb-3">
-              "{currentQuote.text}"
+            <p className="text-base sm:text-lg font-normal text-text-primary leading-relaxed mb-2">
+              &ldquo;{currentQuote.text}&rdquo;
             </p>
-            <p className="text-sm text-text-secondary italic">
+            <p className="text-xs text-text-muted">
               — {currentQuote.author}
             </p>
           </motion.div>
         </AnimatePresence>
       </div>
 
-      <div className="flex justify-center gap-3 mt-4">
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+      <div className="flex justify-center gap-2 mt-3">
+        <button
           onClick={prev}
-          className="w-10 h-10 rounded-full bg-bg-primary/50 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"
+          className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-text-muted hover:text-text-primary hover:border-text-muted transition-colors cursor-pointer"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+        </button>
+        <button
           onClick={next}
-          className="w-10 h-10 rounded-full bg-bg-primary/50 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"
+          className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-text-muted hover:text-text-primary hover:border-text-muted transition-colors cursor-pointer"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
-        </motion.button>
+        </button>
       </div>
     </motion.div>
   );

@@ -7,22 +7,27 @@ import { useTracker } from './hooks/useTracker';
 import { useAuth } from './hooks/useAuth';
 
 function App() {
-  const { user, loading, error, signInWithGoogle, logout } = useAuth();
+  const { user, loading, error, signInWithGoogle, signInAnon, logout, isLocalhost } = useAuth();
   const tracker = useTracker(user?.uid ?? null);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-5xl mb-4 animate-pulse">🧊</div>
-          <p className="text-text-secondary text-sm">Ładowanie...</p>
-        </div>
+        <div className="w-5 h-5 border-2 border-border border-t-accent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!user) {
-    return <LoginScreen onSignIn={signInWithGoogle} error={error} loading={loading} />;
+    return (
+      <LoginScreen
+        onSignIn={signInWithGoogle}
+        onSignInAnon={signInAnon}
+        showAnon={isLocalhost}
+        error={error}
+        loading={loading}
+      />
+    );
   }
 
   return (
@@ -45,7 +50,7 @@ function App() {
         isMarked={tracker.isMarked}
       />
 
-      <div className="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
         <div className="lg:col-span-2">
           <MotivationalCard />
         </div>
