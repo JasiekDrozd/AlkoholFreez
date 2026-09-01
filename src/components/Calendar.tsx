@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 import { DayCell } from './DayCell';
 import { dateToStr, today as getToday, CHALLENGE_START, CHALLENGE_END } from '../utils/dates';
 import confetti from 'canvas-confetti';
@@ -35,21 +36,65 @@ function fireConfetti() {
   confetti({ ...defaults, particleCount: 30, spread: 90, startVelocity: 40, decay: 0.92 });
 }
 
+function ConfirmDialog({ day, onConfirm, onCancel }: { day: number; onConfirm: () => void; onCancel: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      onClick={onCancel}
+    >
+      <div className="fixed inset-0 bg-black/60" />
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        transition={{ duration: 0.15 }}
+        className="relative glass-card p-5 max-w-xs w-full text-center"
+        onClick={e => e.stopPropagation()}
+      >
+        <p className="text-sm text-text-primary mb-1">Unmark day {day}?</p>
+        <p className="text-xs text-text-muted mb-4">This will remove the day from your streak.</p>
+        <div className="flex gap-2">
+          <button
+            onClick={onCancel}
+            className="flex-1 px-3 py-2 text-xs rounded-lg border border-border text-text-secondary hover:bg-bg-card-hover transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 px-3 py-2 text-xs rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors cursor-pointer"
+          >
+            Unmark
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 function MonthGrid({
-  year, month, isMarked, toggleDay,
+  year, month, isMarked, toggleDay, onUnmarkRequest,
 }: {
   year: number; month: number;
   isMarked: (s: string) => boolean;
   toggleDay: (s: string) => void;
+  onUnmarkRequest: (dateStr: string, day: number) => void;
 }) {
   const days = getMonthDays(year, month);
   const firstDayOfWeek = (days[0].getDay() + 6) % 7;
   const t = getToday();
 
-  const handleClick = (dateStr: string) => {
+  const handleClick = (dateStr: string, day: number) => {
     const wasMarked = isMarked(dateStr);
-    toggleDay(dateStr);
-    if (!wasMarked) fireConfetti();
+    if (wasMarked) {
+      onUnmarkRequest(dateStr, day);
+    } else {
+      toggleDay(dateStr);
+      fireConfetti();
+    }
   };
 
   return (
@@ -88,7 +133,7 @@ function MonthGrid({
               isToday={isToday}
               isInRange={isInRange}
               isFuture={isFuture}
-              onClick={() => handleClick(dateStr)}
+              onClick={() => handleClick(dateStr, date.getDate())}
             />
           );
         })}
@@ -98,6 +143,8 @@ function MonthGrid({
 }
 
 export function Calendar({ isMarked, toggleDay }: CalendarProps) {
+  const [confirmTarget, setConfirmTarget] = useState<{ dateStr: string; day: number } | null>(null);
+
   const months = [
     { year: 2026, month: 7 },
     { year: 2026, month: 8 },
@@ -106,17 +153,38 @@ export function Calendar({ isMarked, toggleDay }: CalendarProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-      {months.map(({ year, month }, index) => (
-        <motion.div
-          key={`${year}-${month}`}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.08, duration: 0.4 }}
-        >
-          <MonthGrid year={year} month={month} isMarked={isMarked} toggleDay={toggleDay} />
-        </motion.div>
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+        {months.map(({ year, month }, index) => (
+          <motion.div
+            key={`${year}-${month}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.08, duration: 0.4 }}
+          >
+            <MonthGrid
+              year={year}
+              month={month}
+              isMarked={isMarked}
+              toggleDay={toggleDay}
+              onUnmarkRequest={(dateStr, day) => setConfirmTarget({ dateStr, day })}
+            />
+          </motion.div>
+        ))}
+      </div>
+
+      <AnimatePresence>
+        {confirmTarget && (
+          <ConfirmDialog
+            day={confirmTarget.day}
+            onConfirm={() => {
+              toggleDay(confirmTarget.dateStr);
+              setConfirmTarget(null);
+            }}
+            onCancel={() => setConfirmTarget(null)}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 }

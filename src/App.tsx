@@ -3,6 +3,7 @@ import { MotivationalCard } from './components/MotivationalCard';
 import { PreviousChallenge } from './components/PreviousChallenge';
 import { TopBar } from './components/TopBar';
 import { LoginScreen } from './components/LoginScreen';
+import { InstallBanner } from './components/InstallBanner';
 import { useTracker } from './hooks/useTracker';
 import { useAuth } from './hooks/useAuth';
 
@@ -56,6 +57,8 @@ function App() {
         </div>
         <PreviousChallenge />
       </div>
+
+      <InstallBanner />
     </div>
   );
 }

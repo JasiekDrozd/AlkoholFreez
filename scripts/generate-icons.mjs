@@ -32,6 +32,7 @@ async function generate(size) {
   console.log(`Generated ${path} (${png.length} bytes)`);
 }
 
-await generate(192);
-await generate(512);
+for (const size of [72, 96, 128, 144, 152, 192, 384, 512]) {
+  await generate(size);
+}
 console.log('Done!');
