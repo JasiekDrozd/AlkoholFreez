@@ -1,7 +1,12 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { dateToStr, strToDate, getDaysBetween, CHALLENGE_START, CHALLENGE_END, today as getToday } from '../utils/dates';
+import { db, auth } from '../firebase';
+import { doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 
 const STORAGE_KEY = 'alkoholfreez-days';
+const FIRESTORE_COLLECTION = 'trackers';
+const FIRESTORE_DOC = 'jasiek';
 
 export interface TrackerData {
   markedDays: Set<string>;
@@ -16,6 +21,7 @@ export interface TrackerData {
   daysRemaining: number;
   progressPercent: number;
   previousStreak: { start: string; end: string; days: number };
+  syncStatus: 'connecting' | 'synced' | 'offline';
 }
 
 function loadMarkedDays(): Set<string> {
@@ -75,9 +81,64 @@ function calculateLongestStreak(markedDays: Set<string>): number {
 
 export function useTracker(): TrackerData {
   const [markedDays, setMarkedDays] = useState<Set<string>>(loadMarkedDays);
+  const [syncStatus, setSyncStatus] = useState<'connecting' | 'synced' | 'offline'>('connecting');
+  const isRemoteUpdate = useRef(false);
+  const authReady = useRef(false);
 
+  // Sign in anonymously and listen to Firestore
   useEffect(() => {
+    let unsubFirestore: (() => void) | null = null;
+
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        authReady.current = true;
+        const docRef = doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOC);
+
+        unsubFirestore = onSnapshot(
+          docRef,
+          (snapshot) => {
+            if (snapshot.exists()) {
+              const data = snapshot.data();
+              const remoteDays: string[] = data.markedDays || [];
+              isRemoteUpdate.current = true;
+              const newSet = new Set(remoteDays);
+              setMarkedDays(newSet);
+              saveMarkedDays(newSet);
+            }
+            setSyncStatus('synced');
+          },
+          () => {
+            setSyncStatus('offline');
+          }
+        );
+      }
+    });
+
+    signInAnonymously(auth).catch(() => {
+      setSyncStatus('offline');
+    });
+
+    return () => {
+      unsubAuth();
+      unsubFirestore?.();
+    };
+  }, []);
+
+  // Sync local changes to Firestore
+  useEffect(() => {
+    if (isRemoteUpdate.current) {
+      isRemoteUpdate.current = false;
+      return;
+    }
+
     saveMarkedDays(markedDays);
+
+    if (authReady.current) {
+      const docRef = doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOC);
+      setDoc(docRef, { markedDays: [...markedDays] }, { merge: true }).catch(() => {
+        setSyncStatus('offline');
+      });
+    }
   }, [markedDays]);
 
   const toggleDay = useCallback((dateStr: string) => {
@@ -120,5 +181,6 @@ export function useTracker(): TrackerData {
       end: '2026-05-31',
       days: 120,
     },
+    syncStatus,
   };
 }

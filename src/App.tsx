@@ -3,6 +3,7 @@ import { Calendar } from './components/Calendar';
 import { Stats } from './components/Stats';
 import { MotivationalCard } from './components/MotivationalCard';
 import { PreviousChallenge } from './components/PreviousChallenge';
+import { SyncBadge } from './components/SyncBadge';
 import { useTracker } from './hooks/useTracker';
 
 function App() {
@@ -10,6 +11,7 @@ function App() {
 
   return (
     <div className="min-h-screen px-4 sm:px-6 lg:px-8 pb-12 max-w-[1600px] mx-auto">
+      <SyncBadge status={tracker.syncStatus} />
       <Header currentStreak={tracker.currentStreak} />
 
       <Stats
