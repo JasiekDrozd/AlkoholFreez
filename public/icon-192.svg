@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <rect width="192" height="192" fill="#0a0a1a" rx="32"/>
+  <circle cx="96" cy="96" r="70" fill="url(#g)"/>
+  <defs>
+    <radialGradient id="g" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#065f46"/>
+    </radialGradient>
+  </defs>
+  <text x="96" y="105" text-anchor="middle" font-size="80" font-family="serif">>Ê</text>
+</svg>
